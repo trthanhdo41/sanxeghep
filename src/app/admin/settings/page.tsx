@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Settings, Loader2, Save, Phone, Mail, MapPin, Clock, Building, FileText } from 'lucide-react'
+import { Settings, Loader2, Save, Phone, Mail, MapPin, Clock, Building, FileText, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
+import { logAction } from '@/lib/permissions'
 
 interface SiteSetting {
   id: string
@@ -34,7 +35,7 @@ export default function AdminSettingsPage() {
       return
     }
 
-    if (user.role !== 'admin') {
+    if (user.role !== 'admin' && user.role !== 'staff') {
       router.push('/')
       return
     }
@@ -79,6 +80,12 @@ export default function AdminSettingsPage() {
 
       if (error) throw error
 
+      // Log action
+      await logAction(user!.id, 'update', 'settings', setting.key, {
+        setting_key: setting.key,
+        setting_description: setting.description,
+      })
+
       toast.success('Đã lưu thành công')
     } catch (error) {
       console.error('Error saving setting:', error)
@@ -103,6 +110,12 @@ export default function AdminSettingsPage() {
 
       await Promise.all(updates)
 
+      // Log action
+      await logAction(user!.id, 'update', 'settings', 'bulk_update', {
+        total_settings: settings.length,
+        categories: [...new Set(settings.map(s => s.category))],
+      })
+
       toast.success('Đã lưu tất cả thành công')
     } catch (error) {
       console.error('Error saving all settings:', error)
@@ -124,7 +137,7 @@ export default function AdminSettingsPage() {
     )
   }
 
-  if (!user || user.role !== 'admin') {
+  if (!user || (user.role !== 'admin' && user.role !== 'staff')) {
     return null
   }
 
@@ -132,8 +145,12 @@ export default function AdminSettingsPage() {
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
       <div className="container py-16">
         <div className="flex items-center justify-between mb-8">
-          <Button variant="outline" onClick={() => router.push('/admin')}>
-            ← Quay lại
+          <Button 
+            variant="outline" 
+            size="icon"
+            onClick={() => router.push('/admin')}
+          >
+            <ArrowLeft className="w-4 h-4" />
           </Button>
           <div className="flex-1 mx-8">
             <h1 className="text-3xl font-bold">Cài đặt Website</h1>

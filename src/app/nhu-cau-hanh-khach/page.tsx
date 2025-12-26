@@ -33,6 +33,42 @@ interface PassengerRequest {
 export default function NhuCauHanhKhachPage() {
   const router = useRouter()
   const { user } = useAuth()
+
+  // Check if user is driver or admin - MUST be before other hooks
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted/30">
+        <div className="text-center space-y-4">
+          <h1 className="text-3xl font-bold">Vui lòng đăng nhập</h1>
+          <p className="text-muted-foreground">Bạn cần đăng nhập để xem nhu cầu hành khách</p>
+          <Button onClick={() => router.push('/')}>Về trang chủ</Button>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user.is_driver && user.role !== 'admin') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted/30">
+        <div className="text-center space-y-4">
+          <h1 className="text-3xl font-bold">Chỉ dành cho tài xế</h1>
+          <p className="text-muted-foreground">
+            Trang này chỉ dành cho tài xế để xem nhu cầu của hành khách
+          </p>
+          <div className="flex gap-4 justify-center">
+            <Button onClick={() => router.push('/tai-xe')}>Đăng ký tài xế</Button>
+            <Button variant="outline" onClick={() => router.push('/')}>Về trang chủ</Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return <NhuCauHanhKhachContent />
+}
+
+function NhuCauHanhKhachContent() {
+  const router = useRouter()
   const [requests, setRequests] = useState<PassengerRequest[]>([])
   const [filteredRequests, setFilteredRequests] = useState<PassengerRequest[]>([])
   const [loading, setLoading] = useState(true)
@@ -49,36 +85,6 @@ export default function NhuCauHanhKhachPage() {
   // Location suggestions
   const fromSuggestions = useMemo(() => searchLocations(searchFrom), [searchFrom])
   const toSuggestions = useMemo(() => searchLocations(searchTo), [searchTo])
-
-  // Check if user is driver or admin
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-muted/30">
-        <div className="text-center space-y-4">
-          <h1 className="text-3xl font-bold">Vui lòng đăng nhập</h1>
-          <p className="text-muted-foreground">Bạn cần đăng nhập để xem nhu cầu hành khách</p>
-          <Button onClick={() => router.push('/')}>Về trang chủ</Button>
-        </div>
-      </div>
-    )
-  }
-
-  if (user.role !== 'driver' && user.role !== 'admin') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-muted/30">
-        <div className="text-center space-y-4">
-          <h1 className="text-3xl font-bold">Chỉ dành cho tài xế</h1>
-          <p className="text-muted-foreground">
-            Trang này chỉ dành cho tài xế để xem nhu cầu của hành khách
-          </p>
-          <div className="flex gap-4 justify-center">
-            <Button onClick={() => router.push('/tai-xe')}>Đăng ký tài xế</Button>
-            <Button variant="outline" onClick={() => router.push('/')}>Về trang chủ</Button>
-          </div>
-        </div>
-      </div>
-    )
-  }
 
   useEffect(() => {
     fetchRequests(true)

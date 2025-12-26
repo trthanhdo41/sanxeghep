@@ -21,7 +21,7 @@ interface UserProfile {
 interface AuthContextType {
   user: UserProfile | null
   loading: boolean
-  signIn: (phone: string, password: string) => Promise<void>
+  signIn: (phone: string, password: string) => Promise<UserProfile>
   signUp: (phone: string, name: string, password: string, asDriver?: boolean) => Promise<void>
   upgradeToDriver: () => Promise<void>
   signOut: () => Promise<void>
@@ -162,6 +162,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Đăng nhập thành công
       localStorage.setItem('sanxeghep_user', JSON.stringify(userData))
       setUser(userData)
+      return userData
     } catch (error: any) {
       console.error('Sign in error:', error)
       throw error

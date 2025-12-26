@@ -5,12 +5,13 @@ import { useAuth } from '@/lib/auth-context'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
-import { Phone, Mail, User, Calendar, CheckCircle, XCircle, Clock, Eye } from 'lucide-react'
+import { Phone, Mail, User, Calendar, CheckCircle, XCircle, Clock, Eye, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import bcrypt from 'bcryptjs'
+import { logAction } from '@/lib/permissions'
 
 interface PasswordResetRequest {
   id: number
@@ -42,7 +43,7 @@ export default function PasswordResetsPage() {
       return
     }
 
-    if (user.role !== 'admin') {
+    if (user.role !== 'admin' && user.role !== 'staff') {
       router.push('/')
       toast.error('Không có quyền truy cập')
       return
@@ -87,6 +88,21 @@ export default function PasswordResetsPage() {
 
     setProcessing(true)
     try {
+      // Check target user role - Staff cannot reset password for admin/staff
+      const { data: targetUser, error: fetchError } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', selectedRequest.user_id)
+        .single()
+
+      if (fetchError) throw fetchError
+
+      if (user?.role === 'staff' && (targetUser.role === 'admin' || targetUser.role === 'staff')) {
+        toast.error('Nhân viên không có quyền đặt lại mật khẩu cho quản trị viên hoặc nhân viên khác')
+        setProcessing(false)
+        return
+      }
+
       // Hash password
       const hashedPassword = await bcrypt.hash(newPassword, 10)
 
@@ -110,6 +126,13 @@ export default function PasswordResetsPage() {
 
       if (requestError) throw requestError
 
+      // Log action
+      await logAction(user!.id, 'update', 'password_reset', selectedRequest.id.toString(), {
+        user_phone: selectedRequest.phone,
+        user_name: selectedRequest.full_name,
+        action: 'approve',
+      })
+
       toast.success('Đã duyệt và cấp mật khẩu mới!')
       setSelectedRequest(null)
       setNewPassword('')
@@ -129,6 +152,21 @@ export default function PasswordResetsPage() {
 
     setProcessing(true)
     try {
+      // Check target user role - Staff cannot reject password reset for admin/staff
+      const { data: targetUser, error: fetchError } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', selectedRequest.user_id)
+        .single()
+
+      if (fetchError) throw fetchError
+
+      if (user?.role === 'staff' && (targetUser.role === 'admin' || targetUser.role === 'staff')) {
+        toast.error('Nhân viên không có quyền xử lý yêu cầu của quản trị viên hoặc nhân viên khác')
+        setProcessing(false)
+        return
+      }
+
       const { error } = await supabase
         .from('password_reset_requests')
         .update({
@@ -139,6 +177,13 @@ export default function PasswordResetsPage() {
         .eq('id', selectedRequest.id)
 
       if (error) throw error
+
+      // Log action
+      await logAction(user!.id, 'update', 'password_reset', selectedRequest.id.toString(), {
+        user_phone: selectedRequest.phone,
+        user_name: selectedRequest.full_name,
+        action: 'reject',
+      })
 
       toast.success('Đã từ chối yêu cầu')
       setSelectedRequest(null)
@@ -180,11 +225,20 @@ export default function PasswordResetsPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="container max-w-6xl">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold">Quản lý yêu cầu đặt lại mật khẩu</h1>
-          <p className="text-muted-foreground mt-2">
-            Xem và xử lý các yêu cầu đặt lại mật khẩu từ người dùng
-          </p>
+        <div className="mb-6 flex items-center gap-4">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => router.push('/admin')}
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold">Quản lý yêu cầu đặt lại mật khẩu</h1>
+            <p className="text-muted-foreground mt-2">
+              Xem và xử lý các yêu cầu đặt lại mật khẩu từ người dùng
+            </p>
+          </div>
         </div>
 
         {/* Filter */}

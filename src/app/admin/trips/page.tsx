@@ -11,6 +11,7 @@ import { TripEditModal } from '@/components/admin/TripEditModal'
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
+import { logAction } from '@/lib/permissions'
 
 export default function AdminTripsPage() {
   const router = useRouter()
@@ -95,6 +96,13 @@ export default function AdminTripsPage() {
 
       if (error) throw error
 
+      // Log action
+      await logAction(user!.id, 'update', 'trip', updatedTrip.id, {
+        route: `${updatedTrip.from_location} → ${updatedTrip.to_location}`,
+        date: updatedTrip.date,
+        time: updatedTrip.time,
+      })
+
       toast.success('Cập nhật chuyến đi thành công!')
       fetchTrips(1)
       setPage(1)
@@ -115,6 +123,11 @@ export default function AdminTripsPage() {
         .eq('id', deleteConfirm.id)
 
       if (error) throw error
+
+      // Log action
+      await logAction(user!.id, 'delete', 'trip', deleteConfirm.id, {
+        route: deleteConfirm.route,
+      })
 
       toast.success('Đã xóa chuyến đi')
       fetchTrips()

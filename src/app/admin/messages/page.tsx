@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Mail, Eye, Archive, Loader2, MessageCircle, Clock, CheckCircle, AtSign, Phone, Trash2 } from 'lucide-react'
+import { Mail, Eye, Archive, Loader2, MessageCircle, Clock, CheckCircle, AtSign, Phone, Trash2, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
+import { logAction } from '@/lib/permissions'
 
 interface ContactMessage {
   id: string
@@ -33,7 +34,7 @@ export default function AdminMessagesPage() {
       return
     }
 
-    if (user.role !== 'admin') {
+    if (user.role !== 'admin' && user.role !== 'staff') {
       router.push('/')
       return
     }
@@ -64,12 +65,28 @@ export default function AdminMessagesPage() {
 
   const updateStatus = async (id: string, status: ContactMessage['status']) => {
     try {
+      // Get message details before updating
+      const { data: message } = await supabase
+        .from('contact_messages')
+        .select('*')
+        .eq('id', id)
+        .single()
+
       const { error } = await supabase
         .from('contact_messages')
         .update({ status, updated_at: new Date().toISOString() })
         .eq('id', id)
 
       if (error) throw error
+
+      // Log action for all status changes
+      await logAction(user!.id, 'update', 'message', id, {
+        action: status === 'replied' ? 'reply' : status === 'read' ? 'mark_read' : status === 'archived' ? 'archive' : 'update',
+        new_status: status,
+        sender_name: message?.name,
+        sender_email: message?.email,
+        subject: message?.subject,
+      })
 
       toast.success('Cập nhật trạng thái thành công')
       fetchMessages()
@@ -83,12 +100,26 @@ export default function AdminMessagesPage() {
     if (!confirm(`Bạn có chắc muốn xóa tin nhắn từ "${name}"?`)) return
 
     try {
+      // Get message details before deleting
+      const { data: message } = await supabase
+        .from('contact_messages')
+        .select('*')
+        .eq('id', id)
+        .single()
+
       const { error } = await supabase
         .from('contact_messages')
         .delete()
         .eq('id', id)
 
       if (error) throw error
+
+      // Log action
+      await logAction(user!.id, 'delete', 'message', id, {
+        sender_name: message?.name,
+        sender_email: message?.email,
+        subject: message?.subject,
+      })
 
       toast.success('Đã xóa tin nhắn')
       fetchMessages()
@@ -118,8 +149,12 @@ export default function AdminMessagesPage() {
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
       <div className="container py-16">
         <div className="flex items-center justify-between mb-8">
-          <Button variant="outline" onClick={() => router.push('/admin')}>
-            ← Quay lại
+          <Button 
+            variant="outline" 
+            size="icon"
+            onClick={() => router.push('/admin')}
+          >
+            <ArrowLeft className="w-4 h-4" />
           </Button>
           <div>
             <h1 className="text-3xl font-bold">Tin nhắn liên hệ</h1>

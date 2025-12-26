@@ -1,7 +1,7 @@
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { Calendar, User, ArrowLeft, Clock, Tag, Shield, TrendingUp, DollarSign, MapPin, Zap, Users, Leaf, Car, Phone, Mail, CheckCircle, AlertTriangle, Heart, Star } from 'lucide-react'
+import { Calendar, User, ArrowLeft, Clock, Tag, DollarSign, MapPin, Zap, Users, Leaf, Car, Phone, Mail, CheckCircle, Star } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { ReactNode } from 'react'
 
@@ -42,7 +42,7 @@ const blogPosts: Record<string, BlogPost> = {
     slug: 'xe-ghep-la-gi-loi-ich-khi-di-xe-ghep',
     title: 'Xe ghép là gì? 7 lợi ích tuyệt vời khi đi xe ghép bạn nên biết',
     excerpt: 'Xe ghép hay đi chung xe đang trở thành xu hướng di chuyển thông minh, tiết kiệm và thân thiện với môi trường.',
-    image: '/logo.png',
+    image: 'https://aloifood.com/wp-content/uploads/2025/06/xe-ghep-la-gi.webp',
     category: 'Hướng dẫn',
     date: '2025-01-15',
     author: 'SanXeGhep',
@@ -148,7 +148,7 @@ const blogPosts: Record<string, BlogPost> = {
     slug: 'cach-tiet-kiem-chi-phi-di-chuyen-bang-xe-ghep',
     title: 'Cách tiết kiệm 50% chi phí di chuyển bằng xe ghép',
     excerpt: 'Chia sẻ chi phí xăng, phí đường khi đi xe ghép giúp bạn tiết kiệm đáng kể.',
-    image: '/logo.png',
+    image: 'https://otogiadinh.top/wp-content/uploads/2022/11/taxi-gia-dinh.jpg',
     category: 'Tiết kiệm',
     date: '2025-01-10',
     author: 'SanXeGhep',
@@ -263,7 +263,7 @@ const blogPosts: Record<string, BlogPost> = {
     slug: 'an-toan-khi-di-xe-ghep-nhung-dieu-can-luu-y',
     title: 'An toàn khi đi xe ghép - 10 điều cần lưu ý',
     excerpt: 'Đảm bảo an toàn là ưu tiên hàng đầu khi tham gia xe ghép.',
-    image: '/logo.png',
+    image: 'https://xetienchuyencantho.com/wp-content/uploads/2024/09/xe-ghep-la-gi-9.jpg',
     category: 'An toàn',
     date: '2025-01-05',
     author: 'SanXeGhep',
@@ -355,7 +355,7 @@ const blogPosts: Record<string, BlogPost> = {
     slug: 'tuyen-duong-xe-ghep-pho-bien-ha-noi-hai-phong',
     title: 'Top 5 tuyến đường xe ghép phổ biến Hà Nội - Hải Phòng',
     excerpt: 'Tuyến Hà Nội - Hải Phòng là một trong những tuyến xe ghép sôi động nhất miền Bắc.',
-    image: '/logo.png',
+    image: 'https://xetienchuyencantho.com/wp-content/uploads/2024/09/xe-ghep-la-gi-17.jpg',
     category: 'Tuyến đường',
     date: '2025-01-12',
     author: 'SanXeGhep',
@@ -484,7 +484,7 @@ const blogPosts: Record<string, BlogPost> = {
     slug: 'lam-tai-xe-xe-ghep-thu-nhap-them-hap-dan',
     title: 'Làm tài xế xe ghép - Thu nhập thêm hấp dẫn 2025',
     excerpt: 'Tận dụng chuyến đi hàng ngày để kiếm thêm thu nhập.',
-    image: '/logo.png',
+    image: 'https://xetienchuyencantho.com/wp-content/uploads/2024/09/xe-ghep-la-gi-15.jpg',
     category: 'Tài xế',
     date: '2025-01-08',
     author: 'SanXeGhep',
@@ -615,7 +615,7 @@ const blogPosts: Record<string, BlogPost> = {
     slug: 'xe-ghep-va-moi-truong-giam-khi-thai-carbon',
     title: 'Xe ghép và môi trường: Giảm 40% khí thải carbon',
     excerpt: 'Đi xe ghép không chỉ tiết kiệm chi phí mà còn góp phần bảo vệ môi trường.',
-    image: '/logo.png',
+    image: 'https://danviet.ex-cdn.com/files/f1/296231569849192448/2024/2/14/xe-ghep-xe-tien-chuyen-17079120483251974896436.jpeg',
     category: 'Môi trường',
     date: '2025-01-03',
     author: 'SanXeGhep',
@@ -759,20 +759,60 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   
   if (!post) {
     return {
-      title: 'Bài viết không tồn tại',
+      title: 'Bài viết không tồn tại | SanXeGhep.vn',
+      description: 'Bài viết bạn tìm kiếm không tồn tại hoặc đã bị xóa.',
     }
   }
+
+  const siteUrl = 'https://sanxeghep.vn'
+  const postUrl = `${siteUrl}/blog/${slug}`
 
   return {
     title: `${post.title} | SanXeGhep.vn`,
     description: post.excerpt,
     keywords: post.keywords.join(', '),
+    authors: [{ name: post.author }],
+    creator: post.author,
+    publisher: 'SanXeGhep.vn',
+    alternates: {
+      canonical: postUrl,
+    },
     openGraph: {
       title: post.title,
       description: post.excerpt,
+      url: postUrl,
+      siteName: 'SanXeGhep.vn',
+      images: [
+        {
+          url: post.image,
+          width: 1200,
+          height: 630,
+          alt: post.title,
+        },
+      ],
+      locale: 'vi_VN',
       type: 'article',
       publishedTime: post.date,
       authors: [post.author],
+      tags: post.keywords,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: post.title,
+      description: post.excerpt,
+      images: [post.image],
+      creator: '@sanxeghep',
+    },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-video-preview': -1,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+      },
     },
   }
 }
@@ -787,8 +827,49 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
   const otherPosts = relatedPosts.filter(p => p.slug !== slug)
 
+  const siteUrl = 'https://sanxeghep.vn'
+  const postUrl = `${siteUrl}/blog/${slug}`
+
+  // Structured Data (JSON-LD) cho SEO
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: post.title,
+    description: post.excerpt,
+    image: post.image,
+    datePublished: post.date,
+    dateModified: post.date,
+    author: {
+      '@type': 'Organization',
+      name: post.author,
+      url: siteUrl,
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'SanXeGhep.vn',
+      url: siteUrl,
+      logo: {
+        '@type': 'ImageObject',
+        url: `${siteUrl}/logo.png`,
+      },
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': postUrl,
+    },
+    keywords: post.keywords.join(', '),
+    articleSection: post.category,
+    inLanguage: 'vi-VN',
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Structured Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+
       {/* Breadcrumb */}
       <div className="bg-white border-b">
         <div className="container py-4">

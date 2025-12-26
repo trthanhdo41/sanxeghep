@@ -7,6 +7,7 @@ import { BackToTop } from "@/components/layout/BackToTop";
 import { ChatBot } from "@/components/ChatBot";
 import { AuthProvider } from "@/lib/auth-context";
 import { SessionExpiredHandler } from "@/components/SessionExpiredHandler";
+import { PassengerNotifications } from "@/components/notifications/PassengerNotifications";
 import { Toaster } from "sonner";
 
 const inter = Inter({
@@ -147,8 +148,9 @@ export default function RootLayout({
           <main className="min-h-screen">{children}</main>
           <Footer />
           <BackToTop />
-          <ChatBot />
+          {/* <ChatBot /> */}
           <SessionExpiredHandler />
+          <PassengerNotifications />
           <Toaster 
             position="bottom-right" 
             richColors 

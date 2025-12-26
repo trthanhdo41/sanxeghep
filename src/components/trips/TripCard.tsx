@@ -5,15 +5,17 @@ import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import { MapPin, Clock, Users, Star, BadgeCheck, Phone, Lock } from 'lucide-react'
+import { MapPin, Clock, Users, Star, BadgeCheck, Phone, Calendar, CheckCircle, TrendingUp } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { TripDetailModal } from './TripDetailModal'
+import { BookingModal } from '@/components/booking/BookingModal'
 import { useAuth } from '@/lib/auth-context'
 
 interface TripCardProps {
   trip: {
     id: string
     driver: {
+      id: string
       name: string
       avatar?: string
       rating: number
@@ -24,16 +26,20 @@ interface TripCardProps {
     to: string
     date: string
     time: string
+    departureTime: string
     seatsAvailable: number
     totalSeats: number
     price: number
     vehicleType: string
   }
+  onBookingSuccess?: () => void
 }
 
-export function TripCard({ trip }: TripCardProps) {
+export function TripCard({ trip, onBookingSuccess }: TripCardProps) {
   const { user } = useAuth()
-  const [showModal, setShowModal] = useState(false)
+  const [showDetailModal, setShowDetailModal] = useState(false)
+  const [showBookingModal, setShowBookingModal] = useState(false)
+  
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -50,7 +56,7 @@ export function TripCard({ trip }: TripCardProps) {
         animate={{ opacity: 1, y: 0 }}
         whileHover={{ y: -8, scale: 1.02 }}
         transition={{ duration: 0.3, ease: "easeOut" }}
-        onClick={() => setShowModal(true)}
+        onClick={() => setShowDetailModal(true)}
       >
         <Card className="overflow-hidden shadow-smooth hover:shadow-2xl transition-all cursor-pointer group border-2 hover:border-primary/20">
         <div className="p-6 space-y-4">
@@ -77,6 +83,21 @@ export function TripCard({ trip }: TripCardProps) {
                   </div>
                   <span>•</span>
                   <span>{trip.driver.totalTrips} chuyến</span>
+                </div>
+                {/* Huy hiệu uy tín */}
+                <div className="flex items-center gap-2 mt-1">
+                  {trip.driver.rating >= 4.5 && (
+                    <Badge className="bg-green-100 text-green-700 text-xs px-2 py-0.5 flex items-center gap-1">
+                      <CheckCircle size={12} />
+                      Uy tín
+                    </Badge>
+                  )}
+                  {trip.driver.totalTrips >= 10 && (
+                    <Badge className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 flex items-center gap-1">
+                      <TrendingUp size={12} />
+                      Hoạt động tích cực
+                    </Badge>
+                  )}
                 </div>
               </div>
             </div>
@@ -119,7 +140,7 @@ export function TripCard({ trip }: TripCardProps) {
           </div>
 
           {/* Price & CTA */}
-          <div className="flex items-center justify-between pt-4 border-t">
+          <div className="flex items-center justify-between pt-4 border-t gap-3">
             <div>
               <p className="text-sm text-muted-foreground">Giá</p>
               {user ? (
@@ -137,18 +158,33 @@ export function TripCard({ trip }: TripCardProps) {
                 </div>
               )}
             </div>
-            <Button 
-              className="relative bg-gradient-to-r from-primary to-accent text-white font-semibold shadow-lg hover:shadow-xl group-hover:scale-105 transition-all btn-glow overflow-hidden"
-              onClick={(e) => {
-                e.stopPropagation()
-                setShowModal(true)
-              }}
-            >
-              <span className="relative z-10 flex items-center gap-2">
-                <Phone size={16} />
+            <div className="flex gap-2">
+              <Button 
+                variant="outline"
+                size="sm"
+                className="font-semibold hover:bg-primary/5 hover:border-primary"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setShowDetailModal(true)
+                }}
+              >
+                <Phone size={16} className="mr-1" />
                 Liên hệ
-              </span>
-            </Button>
+              </Button>
+              <Button 
+                size="sm"
+                className="relative bg-gradient-to-r from-primary to-accent text-white font-semibold shadow-lg hover:shadow-xl group-hover:scale-105 transition-all btn-glow overflow-hidden"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setShowBookingModal(true)
+                }}
+              >
+                <span className="relative z-10 flex items-center gap-1">
+                  <Calendar size={16} />
+                  Đặt chỗ
+                </span>
+              </Button>
+            </div>
           </div>
         </div>
       </Card>
@@ -156,9 +192,28 @@ export function TripCard({ trip }: TripCardProps) {
 
     <TripDetailModal 
       trip={trip}
-      open={showModal}
-      onOpenChange={setShowModal}
+      open={showDetailModal}
+      onOpenChange={setShowDetailModal}
+    />
+
+    <BookingModal
+      open={showBookingModal}
+      onOpenChange={setShowBookingModal}
+      trip={{
+        id: trip.id,
+        driver_id: trip.driver.id,
+        driver_name: trip.driver.name,
+        from_location: trip.from,
+        to_location: trip.to,
+        departure_time: trip.departureTime,
+        available_seats: trip.seatsAvailable,
+        price_per_seat: trip.price,
+      }}
+      onSuccess={() => {
+        onBookingSuccess?.()
+      }}
     />
     </>
   )
 }
+

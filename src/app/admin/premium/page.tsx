@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Crown, Calendar, Loader2, Check, X } from 'lucide-react'
+import { Crown, Calendar, Loader2, Check, X, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
+import { logAction } from '@/lib/permissions'
 
 interface Driver {
   id: string
@@ -31,7 +32,7 @@ export default function AdminPremiumPage() {
       return
     }
 
-    if (user.role !== 'admin') {
+    if (user.role !== 'admin' && user.role !== 'staff') {
       router.push('/')
       return
     }
@@ -64,6 +65,9 @@ export default function AdminPremiumPage() {
       const newStatus = !currentStatus
       const expiresAt = newStatus ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null
 
+      // Get driver info for logging
+      const driver = drivers.find(d => d.id === driverId)
+
       const { error } = await supabase
         .from('users')
         .update({
@@ -73,6 +77,13 @@ export default function AdminPremiumPage() {
         .eq('id', driverId)
 
       if (error) throw error
+
+      // Log action
+      await logAction(user!.id, 'update', 'premium', driverId, {
+        action: newStatus ? 'enable' : 'disable',
+        user_name: driver?.full_name,
+        expires_at: expiresAt,
+      })
 
       toast.success(newStatus ? 'Đã bật VIP 30 ngày' : 'Đã tắt VIP')
       fetchDrivers()
@@ -90,7 +101,7 @@ export default function AdminPremiumPage() {
     )
   }
 
-  if (!user || user.role !== 'admin') {
+  if (!user || (user.role !== 'admin' && user.role !== 'staff')) {
     return null
   }
 
@@ -98,8 +109,12 @@ export default function AdminPremiumPage() {
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
       <div className="container py-16">
         <div className="flex items-center justify-between mb-8">
-          <Button variant="outline" onClick={() => router.push('/admin')}>
-            ← Quay lại
+          <Button 
+            variant="outline" 
+            size="icon"
+            onClick={() => router.push('/admin')}
+          >
+            <ArrowLeft className="w-4 h-4" />
           </Button>
           <div>
             <h1 className="text-3xl font-bold">Quản lý VIP</h1>

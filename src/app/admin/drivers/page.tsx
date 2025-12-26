@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
+import { logAction } from '@/lib/permissions'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,7 +56,7 @@ export default function AdminDriversPage() {
       router.push('/')
       return
     }
-    if (user.role !== 'admin') {
+    if (user.role !== 'admin' && user.role !== 'staff') {
       router.push('/')
       return
     }
@@ -81,6 +82,13 @@ export default function AdminDriversPage() {
 
   const handleApprove = async (applicationId: string, userId: string) => {
     try {
+      // Get application details before updating
+      const { data: application } = await supabase
+        .from('driver_applications')
+        .select('*, user:users(full_name, phone)')
+        .eq('id', applicationId)
+        .single()
+
       // Update application status
       const { error: appError } = await supabase
         .from('driver_applications')
@@ -102,6 +110,13 @@ export default function AdminDriversPage() {
 
       if (userError) throw userError
 
+      // Log action
+      await logAction(user!.id, 'update', 'driver_application', applicationId, {
+        action: 'approve',
+        driver_name: application?.user?.full_name,
+        driver_phone: application?.user?.phone,
+      })
+
       toast.success('Đã duyệt đơn đăng ký', {
         description: 'Người dùng đã trở thành tài xế',
       })
@@ -117,12 +132,26 @@ export default function AdminDriversPage() {
 
   const handleReject = async (applicationId: string) => {
     try {
+      // Get application details before updating
+      const { data: application } = await supabase
+        .from('driver_applications')
+        .select('*, user:users(full_name, phone)')
+        .eq('id', applicationId)
+        .single()
+
       const { error } = await supabase
         .from('driver_applications')
         .update({ status: 'rejected' })
         .eq('id', applicationId)
 
       if (error) throw error
+
+      // Log action
+      await logAction(user!.id, 'update', 'driver_application', applicationId, {
+        action: 'reject',
+        driver_name: application?.user?.full_name,
+        driver_phone: application?.user?.phone,
+      })
 
       toast.success('Đã từ chối đơn đăng ký')
       fetchApplications()

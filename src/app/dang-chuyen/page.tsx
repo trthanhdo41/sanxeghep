@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { MapPin, Calendar, Clock, Users, Banknote, Car, Loader2, Crown, Phone } from 'lucide-react'
 import { motion } from 'framer-motion'
@@ -11,12 +11,15 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
+import { searchLocations } from '@/lib/vietnam-locations'
 
 export default function DangChuyenPage() {
   const router = useRouter()
   const { user } = useAuth()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showFromSuggestions, setShowFromSuggestions] = useState(false)
+  const [showToSuggestions, setShowToSuggestions] = useState(false)
 
   const [formData, setFormData] = useState({
     fromLocation: '',
@@ -29,6 +32,10 @@ export default function DangChuyenPage() {
     vehicleType: '',
     notes: '',
   })
+
+  // Gợi ý địa điểm
+  const fromSuggestions = useMemo(() => searchLocations(formData.fromLocation), [formData.fromLocation])
+  const toSuggestions = useMemo(() => searchLocations(formData.toLocation), [formData.toLocation])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -203,8 +210,8 @@ export default function DangChuyenPage() {
     )
   }
 
-  // Check if user is driver or admin
-  if (user.role !== 'driver' && user.role !== 'admin') {
+  // Check if user is driver (using is_driver flag instead of role)
+  if (!user.is_driver && user.role !== 'admin') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted/30">
         <div className="text-center space-y-4">
@@ -321,30 +328,72 @@ export default function DangChuyenPage() {
               <div className="space-y-2">
                 <Label htmlFor="from">Điểm đi *</Label>
                 <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground z-10" size={18} />
                   <Input
                     id="from"
                     placeholder="VD: Hà Nội, Bắc Ninh..."
                     value={formData.fromLocation}
                     onChange={(e) => setFormData({ ...formData, fromLocation: e.target.value })}
+                    onFocus={() => setShowFromSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowFromSuggestions(false), 200)}
                     className="pl-10"
+                    autoComplete="off"
                     required
                   />
+                  {showFromSuggestions && fromSuggestions.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-border max-h-60 overflow-y-auto z-50">
+                      {fromSuggestions.map((location, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            setFormData({ ...formData, fromLocation: location })
+                            setShowFromSuggestions(false)
+                          }}
+                          className="w-full px-4 py-2.5 text-left hover:bg-muted transition-colors flex items-center gap-2 text-sm"
+                        >
+                          <MapPin size={16} className="text-muted-foreground" />
+                          {location}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="to">Điểm đến *</Label>
                 <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-primary" size={18} />
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-primary z-10" size={18} />
                   <Input
                     id="to"
                     placeholder="VD: Hải Phòng, Quảng Ninh..."
                     value={formData.toLocation}
                     onChange={(e) => setFormData({ ...formData, toLocation: e.target.value })}
+                    onFocus={() => setShowToSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowToSuggestions(false), 200)}
                     className="pl-10"
+                    autoComplete="off"
                     required
                   />
+                  {showToSuggestions && toSuggestions.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-border max-h-60 overflow-y-auto z-50">
+                      {toSuggestions.map((location, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            setFormData({ ...formData, toLocation: location })
+                            setShowToSuggestions(false)
+                          }}
+                          className="w-full px-4 py-2.5 text-left hover:bg-muted transition-colors flex items-center gap-2 text-sm"
+                        >
+                          <MapPin size={16} className="text-muted-foreground" />
+                          {location}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -398,8 +447,11 @@ export default function DangChuyenPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="4 chỗ">Xe 4 chỗ</SelectItem>
+                    <SelectItem value="5 chỗ">Xe 5 chỗ</SelectItem>
                     <SelectItem value="7 chỗ">Xe 7 chỗ</SelectItem>
                     <SelectItem value="16 chỗ">Xe 16 chỗ</SelectItem>
+                    <SelectItem value="29 chỗ">Xe 29 chỗ</SelectItem>
+                    <SelectItem value="45 chỗ">Xe 45 chỗ</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

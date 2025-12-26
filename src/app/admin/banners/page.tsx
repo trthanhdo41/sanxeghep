@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Image as ImageIcon, Loader2, Plus, Trash2, Eye, EyeOff, Search } from 'lucide-react'
+import { Image as ImageIcon, Loader2, Plus, Trash2, Eye, EyeOff, Search, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { BannerFormModal } from '@/components/admin/BannerFormModal'
+import { logAction } from '@/lib/permissions'
 
 interface Banner {
   id: string
@@ -39,7 +40,7 @@ export default function AdminBannersPage() {
       return
     }
 
-    if (user.role !== 'admin') {
+    if (user.role !== 'admin' && user.role !== 'staff') {
       router.push('/')
       return
     }
@@ -68,12 +69,20 @@ export default function AdminBannersPage() {
 
   const toggleActive = async (bannerId: string, currentStatus: boolean) => {
     try {
+      const banner = banners.find(b => b.id === bannerId)
+
       const { error } = await supabase
         .from('banners')
         .update({ is_active: !currentStatus })
         .eq('id', bannerId)
 
       if (error) throw error
+
+      // Log action
+      await logAction(user!.id, 'update', 'banner', bannerId, {
+        action: !currentStatus ? 'enable' : 'disable',
+        title: banner?.title,
+      })
 
       toast.success(!currentStatus ? 'Đã bật banner' : 'Đã tắt banner')
       fetchBanners()
@@ -87,12 +96,20 @@ export default function AdminBannersPage() {
     if (!confirm('Bạn có chắc muốn xóa banner này?')) return
 
     try {
+      const banner = banners.find(b => b.id === bannerId)
+
       const { error } = await supabase
         .from('banners')
         .delete()
         .eq('id', bannerId)
 
       if (error) throw error
+
+      // Log action
+      await logAction(user!.id, 'delete', 'banner', bannerId, {
+        title: banner?.title,
+        position: banner?.position,
+      })
 
       toast.success('Đã xóa banner')
       fetchBanners()
@@ -132,7 +149,7 @@ export default function AdminBannersPage() {
     )
   }
 
-  if (!user || user.role !== 'admin') {
+  if (!user || (user.role !== 'admin' && user.role !== 'staff')) {
     return null
   }
 
@@ -140,8 +157,12 @@ export default function AdminBannersPage() {
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
       <div className="container py-16">
         <div className="flex items-center justify-between mb-8">
-          <Button variant="outline" onClick={() => router.push('/admin')}>
-            ← Quay lại
+          <Button 
+            variant="outline" 
+            size="icon"
+            onClick={() => router.push('/admin')}
+          >
+            <ArrowLeft className="w-4 h-4" />
           </Button>
           <div className="flex-1 mx-8">
             <h1 className="text-3xl font-bold">Quản lý Banner/Ads</h1>

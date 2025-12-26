@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { MapPin, Calendar, Users, Package, MessageSquare, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -8,12 +8,15 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
+import { searchLocations } from '@/lib/vietnam-locations'
 import { toast } from 'sonner'
 
 export default function DangNhuCauPage() {
   const router = useRouter()
   const { user } = useAuth()
   const [loading, setLoading] = useState(false)
+  const [showFromSuggestions, setShowFromSuggestions] = useState(false)
+  const [showToSuggestions, setShowToSuggestions] = useState(false)
   const [formData, setFormData] = useState({
     fromLocation: '',
     toLocation: '',
@@ -23,6 +26,10 @@ export default function DangNhuCauPage() {
     luggage: '',
     notes: '',
   })
+
+  // Location suggestions
+  const fromSuggestions = useMemo(() => searchLocations(formData.fromLocation), [formData.fromLocation])
+  const toSuggestions = useMemo(() => searchLocations(formData.toLocation), [formData.toLocation])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -97,7 +104,7 @@ export default function DangNhuCauPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* From - To */}
               <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-2">
+                <div className="space-y-2 relative">
                   <Label htmlFor="from">
                     <MapPin className="w-4 h-4 inline mr-2" />
                     Điểm đi
@@ -109,11 +116,32 @@ export default function DangNhuCauPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, fromLocation: e.target.value })
                     }
+                    onFocus={() => setShowFromSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowFromSuggestions(false), 200)}
+                    autoComplete="off"
                     required
                   />
+                  {showFromSuggestions && fromSuggestions.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-border max-h-80 overflow-y-auto z-50">
+                      {fromSuggestions.map((location, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            setFormData({ ...formData, fromLocation: location })
+                            setShowFromSuggestions(false)
+                          }}
+                          className="w-full px-4 py-2.5 text-left hover:bg-muted transition-colors flex items-center gap-2 text-sm"
+                        >
+                          <MapPin size={16} className="text-muted-foreground" />
+                          {location}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2 relative">
                   <Label htmlFor="to">
                     <MapPin className="w-4 h-4 inline mr-2" />
                     Điểm đến
@@ -125,8 +153,29 @@ export default function DangNhuCauPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, toLocation: e.target.value })
                     }
+                    onFocus={() => setShowToSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowToSuggestions(false), 200)}
+                    autoComplete="off"
                     required
                   />
+                  {showToSuggestions && toSuggestions.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-border max-h-80 overflow-y-auto z-50">
+                      {toSuggestions.map((location, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            setFormData({ ...formData, toLocation: location })
+                            setShowToSuggestions(false)
+                          }}
+                          className="w-full px-4 py-2.5 text-left hover:bg-muted transition-colors flex items-center gap-2 text-sm"
+                        >
+                          <MapPin size={16} className="text-muted-foreground" />
+                          {location}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { User, Mail, Phone, MapPin, Star, Car, Calendar, Edit2, Loader2, Crown, MessageCircle } from 'lucide-react'
+import { User, Mail, Phone, MapPin, Star, Car, Calendar, Edit2, Loader2, Crown, MessageCircle, Clock, CheckCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -26,8 +26,13 @@ export default function ProfilePage() {
   })
   const [stats, setStats] = useState({
     totalTrips: 0,
+    activeTrips: 0,
     totalBookings: 0,
+    pendingBookings: 0,
+    confirmedBookings: 0,
     rating: 0,
+    completedTrips: 0,
+    totalReviews: 0,
   })
   const [showAddressSuggestions, setShowAddressSuggestions] = useState(false)
   
@@ -70,8 +75,15 @@ export default function ProfilePage() {
 
   const fetchStats = async () => {
     try {
-      // Count trips as driver
-      const { count: tripsCount } = await supabase
+      // Count trips as driver (active trips)
+      const { count: activeTripsCount } = await supabase
+        .from('trips')
+        .select('*', { count: 'exact', head: true })
+        .eq('driver_id', user?.id)
+        .eq('status', 'active')
+
+      // Count all trips as driver
+      const { count: totalTripsCount } = await supabase
         .from('trips')
         .select('*', { count: 'exact', head: true })
         .eq('driver_id', user?.id)
@@ -82,29 +94,36 @@ export default function ProfilePage() {
         .select('*', { count: 'exact', head: true })
         .eq('passenger_id', user?.id)
 
-      // Calculate average rating from reviews (skip if error)
-      let reviews: any[] = []
-      try {
-        const { data } = await supabase
-          .from('reviews')
-          .select('rating')
-          .eq('driver_id', user?.id)
-        reviews = data || []
-      } catch (err) {
-        // Ignore reviews error
-        console.log('Reviews not available')
-      }
+      // Count pending bookings as driver
+      const { count: pendingBookingsCount } = await supabase
+        .from('bookings')
+        .select('*', { count: 'exact', head: true })
+        .eq('driver_id', user?.id)
+        .eq('status', 'pending')
 
-      let avgRating = 0
-      if (reviews && reviews.length > 0) {
-        const sum = reviews.reduce((acc, r) => acc + (r.rating || 0), 0)
-        avgRating = sum / reviews.length
-      }
+      // Count confirmed bookings as driver
+      const { count: confirmedBookingsCount } = await supabase
+        .from('bookings')
+        .select('*', { count: 'exact', head: true })
+        .eq('driver_id', user?.id)
+        .eq('status', 'confirmed')
+
+      // Get rating and completed trips from users table
+      const { data: userData } = await supabase
+        .from('users')
+        .select('rating, completed_trips, total_reviews')
+        .eq('id', user?.id)
+        .single()
 
       setStats({
-        totalTrips: tripsCount || 0,
+        totalTrips: totalTripsCount || 0,
+        activeTrips: activeTripsCount || 0,
         totalBookings: bookingsCount || 0,
-        rating: avgRating || 0,
+        pendingBookings: pendingBookingsCount || 0,
+        confirmedBookings: confirmedBookingsCount || 0,
+        rating: userData?.rating || 0,
+        completedTrips: userData?.completed_trips || 0,
+        totalReviews: userData?.total_reviews || 0,
       })
     } catch (error) {
       console.error('Error fetching stats:', error)
@@ -309,36 +328,85 @@ export default function ProfilePage() {
             </>
           )}
 
-          <div className="grid md:grid-cols-3 gap-6">
-            {/* Stats Cards */}
-            <Card className="p-6 text-center hover:shadow-lg transition-all">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 w-fit mx-auto mb-3">
-                <Car className="w-6 h-6 text-primary" />
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            {/* For Drivers */}
+            {user?.is_driver && (
+              <>
+                <Card className="p-4 text-center hover:shadow-lg transition-all">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-blue-100 to-blue-200 w-fit mx-auto mb-2">
+                    <Car className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div className="text-2xl font-bold text-blue-600 mb-1">
+                    {stats.activeTrips}
+                  </div>
+                  <div className="text-xs text-muted-foreground">Chuyến đang đăng</div>
+                </Card>
+
+                <Card className="p-4 text-center hover:shadow-lg transition-all">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-amber-100 to-amber-200 w-fit mx-auto mb-2">
+                    <Clock className="w-5 h-5 text-amber-600" />
+                  </div>
+                  <div className="text-2xl font-bold text-amber-600 mb-1">
+                    {stats.pendingBookings}
+                  </div>
+                  <div className="text-xs text-muted-foreground">Chờ xác nhận</div>
+                </Card>
+
+                <Card className="p-4 text-center hover:shadow-lg transition-all">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-green-100 to-green-200 w-fit mx-auto mb-2">
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                  </div>
+                  <div className="text-2xl font-bold text-green-600 mb-1">
+                    {stats.confirmedBookings}
+                  </div>
+                  <div className="text-xs text-muted-foreground">Đã xác nhận</div>
+                </Card>
+              </>
+            )}
+
+            {/* For Passengers */}
+            {!user?.is_driver && (
+              <Card className="p-4 text-center hover:shadow-lg transition-all">
+                <div className="p-2 rounded-lg bg-gradient-to-br from-purple-100 to-purple-200 w-fit mx-auto mb-2">
+                  <Calendar className="w-5 h-5 text-purple-600" />
+                </div>
+                <div className="text-2xl font-bold text-purple-600 mb-1">
+                  {stats.totalBookings}
+                </div>
+                <div className="text-xs text-muted-foreground">Chuyến đã đặt</div>
+              </Card>
+            )}
+
+            {/* Common Stats */}
+            <Card className="p-4 text-center hover:shadow-lg transition-all">
+              <div className="p-2 rounded-lg bg-gradient-to-br from-indigo-100 to-indigo-200 w-fit mx-auto mb-2">
+                <CheckCircle className="w-5 h-5 text-indigo-600" />
               </div>
-              <div className="text-3xl font-bold gradient-text mb-1">
+              <div className="text-2xl font-bold text-indigo-600 mb-1">
+                {stats.completedTrips}
+              </div>
+              <div className="text-xs text-muted-foreground">Chuyến hoàn thành</div>
+            </Card>
+
+            <Card className="p-4 text-center hover:shadow-lg transition-all">
+              <div className="p-2 rounded-lg bg-gradient-to-br from-yellow-100 to-yellow-200 w-fit mx-auto mb-2">
+                <Star className="w-5 h-5 text-yellow-600" />
+              </div>
+              <div className="text-2xl font-bold text-yellow-600 mb-1">
+                {stats.rating > 0 ? stats.rating.toFixed(1) : '0.0'}
+              </div>
+              <div className="text-xs text-muted-foreground">Đánh giá ({stats.totalReviews})</div>
+            </Card>
+
+            <Card className="p-4 text-center hover:shadow-lg transition-all">
+              <div className="p-2 rounded-lg bg-gradient-to-br from-pink-100 to-pink-200 w-fit mx-auto mb-2">
+                <Car className="w-5 h-5 text-pink-600" />
+              </div>
+              <div className="text-2xl font-bold text-pink-600 mb-1">
                 {stats.totalTrips}
               </div>
-              <div className="text-sm text-muted-foreground">Chuyến đã đăng</div>
-            </Card>
-
-            <Card className="p-6 text-center hover:shadow-lg transition-all">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 w-fit mx-auto mb-3">
-                <Calendar className="w-6 h-6 text-primary" />
-              </div>
-              <div className="text-3xl font-bold gradient-text mb-1">
-                {stats.totalBookings}
-              </div>
-              <div className="text-sm text-muted-foreground">Chuyến đã đặt</div>
-            </Card>
-
-            <Card className="p-6 text-center hover:shadow-lg transition-all">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 w-fit mx-auto mb-3">
-                <Star className="w-6 h-6 text-primary" />
-              </div>
-              <div className="text-3xl font-bold gradient-text mb-1">
-                {stats.rating > 0 ? stats.rating.toFixed(1) : 'Chưa có'}
-              </div>
-              <div className="text-sm text-muted-foreground">Đánh giá</div>
+              <div className="text-xs text-muted-foreground">Tổng chuyến đăng</div>
             </Card>
           </div>
 
@@ -507,6 +575,26 @@ export default function ProfilePage() {
               <MapPin className="w-5 h-5 mr-2" />
               Tìm chuyến đi
             </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              className="w-full"
+              onClick={() => router.push('/profile/my-bookings')}
+            >
+              <Calendar className="w-5 h-5 mr-2" />
+              Chuyến đi của tôi
+            </Button>
+            {user?.is_driver && (
+              <Button
+                variant="outline"
+                size="lg"
+                className="w-full"
+                onClick={() => router.push('/profile/bookings')}
+              >
+                <MessageCircle className="w-5 h-5 mr-2" />
+                Quản lý đặt chỗ
+              </Button>
+            )}
           </div>
         </div>
       </div>

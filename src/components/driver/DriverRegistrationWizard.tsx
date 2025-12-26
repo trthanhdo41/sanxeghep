@@ -178,9 +178,10 @@ export function DriverRegistrationWizard({ open, onClose, onSuccess }: DriverReg
           phone: formData.phone,
           vehicle_type: formData.vehicleType,
           license_plate: formData.licensePlate.toUpperCase(),
-          vehicle_image: formData.vehicleImage || null,
+          license_number: '', // Không yêu cầu nữa, để trống
           experience_years: parseInt(formData.experienceYears) || 0,
           notes: formData.notes || null,
+          vehicle_registration_image: formData.vehicleImage || null, // Lưu URL ảnh xe
           status: 'pending',
         })
 

@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
+import { logAction } from '@/lib/permissions'
+import { useAuth } from '@/lib/auth-context'
 
 interface Banner {
   id: string
@@ -25,6 +27,7 @@ interface BannerFormModalProps {
 }
 
 export function BannerFormModal({ banner, onClose }: BannerFormModalProps) {
+  const { user } = useAuth()
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     title: banner?.title || '',
@@ -70,10 +73,18 @@ export function BannerFormModal({ banner, onClose }: BannerFormModalProps) {
 
         if (error) throw error
 
+        // Log action
+        if (user) {
+          await logAction(user.id, 'update', 'banner', banner.id, {
+            title: formData.title,
+            position: formData.position,
+          })
+        }
+
         toast.success('Cập nhật banner thành công')
       } else {
         // Create new banner
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('banners')
           .insert({
             title: formData.title,
@@ -84,8 +95,18 @@ export function BannerFormModal({ banner, onClose }: BannerFormModalProps) {
             sort_order: formData.sort_order,
             is_active: formData.is_active,
           })
+          .select()
+          .single()
 
         if (error) throw error
+
+        // Log action
+        if (user && data) {
+          await logAction(user.id, 'create', 'banner', data.id, {
+            title: formData.title,
+            position: formData.position,
+          })
+        }
 
         toast.success('Thêm banner thành công')
       }

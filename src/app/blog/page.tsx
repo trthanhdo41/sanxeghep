@@ -6,7 +6,47 @@ import { Card } from '@/components/ui/card'
 export const metadata: Metadata = {
   title: 'Blog - Tin tức xe ghép | SanXeGhep.vn',
   description: 'Cập nhật tin tức, kinh nghiệm đi xe ghép, chia sẻ chi phí di chuyển thông minh tại Việt Nam. Mẹo tiết kiệm, an toàn khi đi chung xe.',
-  keywords: 'blog xe ghép, tin tức xe ghép, kinh nghiệm đi xe ghép, chia sẻ chi phí, đi chung xe',
+  keywords: 'blog xe ghép, tin tức xe ghép, kinh nghiệm đi xe ghép, chia sẻ chi phí, đi chung xe, carpooling việt nam',
+  authors: [{ name: 'SanXeGhep' }],
+  creator: 'SanXeGhep',
+  publisher: 'SanXeGhep.vn',
+  alternates: {
+    canonical: 'https://sanxeghep.vn/blog',
+  },
+  openGraph: {
+    title: 'Blog - Tin tức xe ghép | SanXeGhep.vn',
+    description: 'Cập nhật tin tức, kinh nghiệm đi xe ghép, chia sẻ chi phí di chuyển thông minh tại Việt Nam.',
+    url: 'https://sanxeghep.vn/blog',
+    siteName: 'SanXeGhep.vn',
+    images: [
+      {
+        url: 'https://sanxeghep.vn/logo.png',
+        width: 1200,
+        height: 630,
+        alt: 'SanXeGhep - Sàn xe ghép uy tín',
+      },
+    ],
+    locale: 'vi_VN',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Blog - Tin tức xe ghép | SanXeGhep.vn',
+    description: 'Cập nhật tin tức, kinh nghiệm đi xe ghép, chia sẻ chi phí di chuyển thông minh tại Việt Nam.',
+    images: ['https://sanxeghep.vn/logo.png'],
+    creator: '@sanxeghep',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
 }
 
 const blogPosts = [
@@ -14,7 +54,7 @@ const blogPosts = [
     slug: 'xe-ghep-la-gi-loi-ich-khi-di-xe-ghep',
     title: 'Xe ghép là gì? 7 lợi ích tuyệt vời khi đi xe ghép bạn nên biết',
     excerpt: 'Xe ghép hay đi chung xe đang trở thành xu hướng di chuyển thông minh, tiết kiệm và thân thiện với môi trường. Cùng tìm hiểu những lợi ích tuyệt vời của hình thức này.',
-    image: '/logo.png',
+    image: 'https://aloifood.com/wp-content/uploads/2025/06/xe-ghep-la-gi.webp',
     category: 'Hướng dẫn',
     date: '2025-01-15',
     author: 'SanXeGhep',
@@ -24,7 +64,7 @@ const blogPosts = [
     slug: 'cach-tiet-kiem-chi-phi-di-chuyen-bang-xe-ghep',
     title: 'Cách tiết kiệm 50% chi phí di chuyển bằng xe ghép',
     excerpt: 'Chia sẻ chi phí xăng, phí đường, phí cầu đường khi đi xe ghép giúp bạn tiết kiệm đáng kể. Khám phá cách tính toán và tối ưu chi phí hiệu quả nhất.',
-    image: '/logo.png',
+    image: 'https://otogiadinh.top/wp-content/uploads/2022/11/taxi-gia-dinh.jpg',
     category: 'Tiết kiệm',
     date: '2025-01-10',
     author: 'SanXeGhep',
@@ -34,7 +74,7 @@ const blogPosts = [
     slug: 'an-toan-khi-di-xe-ghep-nhung-dieu-can-luu-y',
     title: 'An toàn khi đi xe ghép - 10 điều cần lưu ý',
     excerpt: 'Đảm bảo an toàn là ưu tiên hàng đầu khi tham gia xe ghép. Tìm hiểu những lưu ý quan trọng để có chuyến đi an toàn và thoải mái.',
-    image: '/logo.png',
+    image: 'https://xetienchuyencantho.com/wp-content/uploads/2024/09/xe-ghep-la-gi-9.jpg',
     category: 'An toàn',
     date: '2025-01-05',
     author: 'SanXeGhep',
@@ -44,9 +84,9 @@ const blogPosts = [
     slug: 'tuyen-duong-xe-ghep-pho-bien-ha-noi-hai-phong',
     title: 'Top 5 tuyến đường xe ghép phổ biến Hà Nội - Hải Phòng',
     excerpt: 'Tuyến Hà Nội - Hải Phòng là một trong những tuyến xe ghép sôi động nhất miền Bắc. Khám phá các tuyến đường, giá cả và kinh nghiệm đi xe ghép trên tuyến này.',
-    image: '/logo.png',
+    image: 'https://xetienchuyencantho.com/wp-content/uploads/2024/09/xe-ghep-la-gi-17.jpg',
     category: 'Tuyến đường',
-    date: '2024-12-28',
+    date: '2025-01-12',
     author: 'SanXeGhep',
     readTime: '5 phút đọc',
   },
@@ -54,9 +94,9 @@ const blogPosts = [
     slug: 'lam-tai-xe-xe-ghep-thu-nhap-them-hap-dan',
     title: 'Làm tài xế xe ghép - Thu nhập thêm hấp dẫn 2025',
     excerpt: 'Tận dụng chuyến đi hàng ngày để kiếm thêm thu nhập. Tìm hiểu cách trở thành tài xế xe ghép và tối ưu hóa lợi nhuận từ việc chia sẻ chuyến đi.',
-    image: '/logo.png',
+    image: 'https://xetienchuyencantho.com/wp-content/uploads/2024/09/xe-ghep-la-gi-15.jpg',
     category: 'Tài xế',
-    date: '2024-12-20',
+    date: '2025-01-08',
     author: 'SanXeGhep',
     readTime: '7 phút đọc',
   },
@@ -64,9 +104,9 @@ const blogPosts = [
     slug: 'xe-ghep-va-moi-truong-giam-khi-thai-carbon',
     title: 'Xe ghép và môi trường: Giảm 40% khí thải carbon',
     excerpt: 'Đi xe ghép không chỉ tiết kiệm chi phí mà còn góp phần bảo vệ môi trường. Tìm hiểu tác động tích cực của xe ghép đến môi trường Việt Nam.',
-    image: '/logo.png',
+    image: 'https://danviet.ex-cdn.com/files/f1/296231569849192448/2024/2/14/xe-ghep-xe-tien-chuyen-17079120483251974896436.jpeg',
     category: 'Môi trường',
-    date: '2024-12-15',
+    date: '2025-01-03',
     author: 'SanXeGhep',
     readTime: '5 phút đọc',
   },
@@ -96,14 +136,15 @@ export default function BlogPage() {
             {blogPosts.map((post) => (
               <Link key={post.slug} href={`/blog/${post.slug}`}>
                 <Card className="h-full hover:shadow-xl transition-all duration-300 overflow-hidden group">
-                  <div className="relative h-48 bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center overflow-hidden">
+                  <div className="relative h-48 overflow-hidden">
                     <img 
                       src={post.image} 
                       alt={post.title}
-                      className="w-24 h-24 object-contain group-hover:scale-110 transition-transform duration-300"
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                     />
-                    <div className="absolute top-4 left-4">
-                      <span className="px-3 py-1 bg-primary text-white text-xs font-semibold rounded-full">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                    <div className="absolute top-4 left-4 z-10">
+                      <span className="px-3 py-1 bg-primary text-white text-xs font-semibold rounded-full shadow-lg">
                         {post.category}
                       </span>
                     </div>

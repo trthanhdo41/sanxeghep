@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
+import { logAction } from '@/lib/permissions'
 
 export default function AdminUsersPage() {
   const router = useRouter()
@@ -19,7 +20,7 @@ export default function AdminUsersPage() {
   const [search, setSearch] = useState('')
   const [editingUser, setEditingUser] = useState<any>(null)
   const [editRole, setEditRole] = useState('')
-  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string; phone: string } | null>(null)
   const [sortBy, setSortBy] = useState<'name' | 'date'>('date')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [page, setPage] = useState(1)
@@ -50,11 +51,17 @@ export default function AdminUsersPage() {
       const from = (pageNum - 1) * ITEMS_PER_PAGE
       const to = from + ITEMS_PER_PAGE - 1
 
-      const { data, error, count } = await supabase
+      // Staff chỉ thấy passenger và driver, không thấy admin và staff
+      let query = supabase
         .from('users')
         .select('*', { count: 'exact' })
         .order('created_at', { ascending: false })
-        .range(from, to)
+
+      if (user?.role === 'staff') {
+        query = query.in('role', ['passenger', 'driver'])
+      }
+
+      const { data, error, count } = await query.range(from, to)
 
       if (error) throw error
 
@@ -112,6 +119,10 @@ export default function AdminUsersPage() {
 
   const handleEditRole = async (userId: string, newRole: string) => {
     try {
+      // Get user info before updating
+      const userToUpdate = users.find(u => u.id === userId)
+      const oldRole = userToUpdate?.role
+
       const { error } = await supabase
         .from('users')
         .update({ 
@@ -121,6 +132,15 @@ export default function AdminUsersPage() {
         .eq('id', userId)
 
       if (error) throw error
+
+      // Log action
+      await logAction(user!.id, 'update', 'user', userId, {
+        action: 'change_role',
+        user_name: userToUpdate?.full_name,
+        user_phone: userToUpdate?.phone,
+        old_role: oldRole,
+        new_role: newRole,
+      })
 
       toast.success('Cập nhật vai trò thành công!')
       fetchUsers(1)
@@ -142,6 +162,12 @@ export default function AdminUsersPage() {
         .eq('id', deleteConfirm.id)
 
       if (error) throw error
+
+      // Log action
+      await logAction(user!.id, 'delete', 'user', deleteConfirm.id, {
+        user_name: deleteConfirm.name,
+        user_phone: deleteConfirm.phone,
+      })
 
       toast.success('Xóa người dùng thành công!')
       fetchUsers(1)
@@ -273,9 +299,8 @@ export default function AdminUsersPage() {
                                 onChange={(e) => setEditRole(e.target.value)}
                                 className="px-3 py-1.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                               >
-                                <option value="user">Hành khách</option>
+                                <option value="passenger">Hành khách</option>
                                 <option value="driver">Tài xế</option>
-                                <option value="admin">Quản trị viên</option>
                               </select>
                               <button
                                 onClick={() => handleEditRole(u.id, editRole)}
@@ -303,7 +328,7 @@ export default function AdminUsersPage() {
                                 <Edit className="w-4 h-4" />
                               </button>
                               <button
-                                onClick={() => setDeleteConfirm({ id: u.id, name: u.full_name })}
+                                onClick={() => setDeleteConfirm({ id: u.id, name: u.full_name, phone: u.phone })}
                                 className="p-2 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
                                 title="Xóa người dùng"
                               >

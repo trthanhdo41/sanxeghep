@@ -9,6 +9,7 @@ import Link from 'next/link'
 
 interface Trip {
   id: string
+  driver_id: string
   driver: {
     name: string
     avatar?: string
@@ -20,6 +21,7 @@ interface Trip {
   to: string
   date: string
   time: string
+  departure_time: string
   seatsAvailable: number
   totalSeats: number
   price: number
@@ -66,6 +68,7 @@ export function FeaturedTrips() {
           
           return {
             id: trip.id,
+            driver_id: trip.driver_id, // Thêm driver_id
             driver: {
               name: driver?.full_name || 'Tài xế',
               avatar: driver?.avatar_url || '',
@@ -76,8 +79,9 @@ export function FeaturedTrips() {
             },
             from: trip.from_location || 'N/A',
             to: trip.to_location || 'N/A',
-            date: trip.date ? new Date(trip.date).toLocaleDateString('vi-VN') : 'N/A',
+            date: trip.date || '',
             time: trip.time ? trip.time.slice(0, 5) : '00:00',
+            departure_time: trip.date && trip.time ? `${trip.date}T${trip.time}` : '', // Format ISO
             seatsAvailable: trip.seats_available || 0,
             totalSeats: trip.total_seats || 0,
             price: trip.price || 0,
@@ -141,7 +145,7 @@ export function FeaturedTrips() {
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.05 }}
                 >
-                  <TripCard trip={trip} />
+                  <TripCard trip={{...trip, departureTime: trip.departure_time, driver: {...trip.driver, id: trip.driver_id}}} />
                 </motion.div>
               ))}
             </div>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Phone, Loader2, User, Lock, Eye, EyeOff } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -17,6 +18,7 @@ interface AuthModalProps {
 }
 
 export function AuthModal({ open, onOpenChange }: AuthModalProps) {
+  const router = useRouter()
   const { signIn, signUp } = useAuth()
   const [mode, setMode] = useState<'login' | 'register'>('login')
   const [showForgotPassword, setShowForgotPassword] = useState(false)
@@ -55,7 +57,7 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
     setLoading(true)
 
     try {
-      await signIn(phone, password)
+      const userData = await signIn(phone, password)
       toast.success('Đăng nhập thành công!', {
         description: 'Chào mừng bạn quay lại',
       })
@@ -64,6 +66,11 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
       setName('')
       setPassword('')
       setConfirmPassword('')
+      
+      // Redirect staff/admin to admin dashboard
+      if (userData?.role === 'admin' || userData?.role === 'staff') {
+        router.push('/admin')
+      }
     } catch (err: any) {
       const errorMsg = err.message || 'Có lỗi xảy ra. Vui lòng thử lại.'
       setError(errorMsg)

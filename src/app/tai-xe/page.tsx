@@ -191,6 +191,30 @@ export default function TaiXePage() {
           </div>
         </div>
 
+        {/* Video Giới Thiệu */}
+        <div className="max-w-4xl mx-auto mb-16">
+          <div className="text-center mb-6">
+            <h2 className="text-3xl font-bold mb-3">Giới Thiệu Sàn Xe Ghép</h2>
+            <p className="text-muted-foreground">
+              Xem video để hiểu rõ hơn về cách hoạt động và lợi ích khi tham gia
+            </p>
+          </div>
+          <div className="relative rounded-2xl overflow-hidden shadow-2xl">
+            <video 
+              controls 
+              autoPlay 
+              muted 
+              loop
+              playsInline
+              className="w-full aspect-video"
+              poster="/logo.png"
+            >
+              <source src="/intro-video.mp4" type="video/mp4" />
+              Trình duyệt của bạn không hỗ trợ video.
+            </video>
+          </div>
+        </div>
+
         {/* Driver Registration Form - Inline */}
         {!user?.is_driver && (
           <div ref={formRef} className="max-w-4xl mx-auto mb-16">

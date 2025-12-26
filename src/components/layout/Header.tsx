@@ -2,29 +2,61 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { Menu, X, LogOut, User, Shield, Car, UserCircle, Crown } from 'lucide-react'
+import { Menu, X, LogOut, User, Shield, Car, UserCircle, Crown, Calendar, ClipboardList } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/lib/auth-context'
 import { AuthModal } from '@/components/auth/AuthModal'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
+import { BookingNotifications } from '@/components/notifications/BookingNotifications'
+import { supabase } from '@/lib/supabase'
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [authModalOpen, setAuthModalOpen] = useState(false)
-  const [viewMode, setViewMode] = useState<'driver' | 'passenger'>('driver') // Toggle mode
+  const [viewMode, setViewMode] = useState<'driver' | 'passenger'>('driver')
+  const [activeTripsCount, setActiveTripsCount] = useState(0)
+  const [bookingsCount, setBookingsCount] = useState(0)
   const { user, signOut } = useAuth()
   
   // Auto set view mode based on user role
   useEffect(() => {
     if (user?.is_driver && !user?.is_passenger) {
       setViewMode('driver')
+      fetchActiveTripsCount()
     } else if (!user?.is_driver && user?.is_passenger) {
       setViewMode('passenger')
     }
-    // If both, keep current mode
+    
+    if (user) {
+      fetchBookingsCount()
+    }
   }, [user])
+
+  const fetchActiveTripsCount = async () => {
+    if (!user?.is_driver) return
+    
+    const { count } = await supabase
+      .from('trips')
+      .select('*', { count: 'exact', head: true })
+      .eq('driver_id', user.id)
+      .eq('status', 'active')
+    
+    setActiveTripsCount(count || 0)
+  }
+
+  const fetchBookingsCount = async () => {
+    if (!user) return
+    
+    const { count } = await supabase
+      .from('bookings')
+      .select('*', { count: 'exact', head: true })
+      .eq('passenger_id', user.id)
+      .in('status', ['pending', 'confirmed'])
+    
+    setBookingsCount(count || 0)
+  }
 
   const handleSignOut = async () => {
     try {
@@ -131,20 +163,73 @@ export function Header() {
                 </Link>
               </motion.div>
             )}
+            
+            {/* Passenger mode - Post request */}
+            {viewMode === 'passenger' && user && (
+              <motion.div
+                key="post-request"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Link href="/dang-nhu-cau" className="text-sm font-medium hover:text-primary transition-colors">
+                  Hành khách đăng
+                </Link>
+              </motion.div>
+            )}
+            
+            {/* Non-logged in - Post request */}
+            {!user && (
+              <motion.div
+                key="post-request-guest"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                <button 
+                  onClick={() => setAuthModalOpen(true)}
+                  className="text-sm font-medium hover:text-primary transition-colors"
+                >
+                  Hành khách đăng
+                </button>
+              </motion.div>
+            )}
           </AnimatePresence>
-          
-          {/* User & Driver - Post request */}
-          {user ? (
-            <Link href="/dang-nhu-cau" className="text-sm font-medium hover:text-primary transition-colors">
-              Hành khách đăng
-            </Link>
-          ) : (
-            <button 
-              onClick={() => setAuthModalOpen(true)}
-              className="text-sm font-medium hover:text-primary transition-colors"
+
+          {/* Driver mode: Manage Bookings Button */}
+          {viewMode === 'driver' && user?.is_driver && (
+            <Link 
+              href="/profile/bookings"
+              className="relative flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg"
             >
-              Hành khách đăng
-            </button>
+              <ClipboardList size={18} />
+              <span className="hidden md:inline">Quản lý đặt chỗ</span>
+              <span className="md:hidden">Đặt chỗ</span>
+              {activeTripsCount > 0 && (
+                <span className="absolute -top-2 -right-2 flex items-center justify-center w-6 h-6 bg-red-500 text-white text-xs font-bold rounded-full border-2 border-white">
+                  {activeTripsCount}
+                </span>
+              )}
+            </Link>
+          )}
+
+          {/* Passenger mode: My Bookings Button */}
+          {viewMode === 'passenger' && user && (
+            <Link 
+              href="/profile/my-bookings"
+              className="relative flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg"
+            >
+              <Calendar size={18} />
+              <span className="hidden md:inline">Chuyến đã đặt</span>
+              <span className="md:hidden">Đã đặt</span>
+              {bookingsCount > 0 && (
+                <span className="absolute -top-2 -right-2 flex items-center justify-center w-6 h-6 bg-red-500 text-white text-xs font-bold rounded-full border-2 border-white">
+                  {bookingsCount}
+                </span>
+              )}
+            </Link>
           )}
           
           {/* Public - Become driver page */}
@@ -185,8 +270,11 @@ export function Header() {
         <div className="hidden lg:flex items-center space-x-4">
           {user ? (
             <>
+              {/* Booking Notifications (for drivers) */}
+              <BookingNotifications />
+              
               {/* Admin Dashboard Link */}
-              {user.role === 'admin' && (
+              {(user.role === 'admin' || user.role === 'staff') && (
                 <Link 
                   href="/admin" 
                   className="flex items-center gap-2 text-sm font-medium text-amber-600 hover:text-amber-700 transition-colors"
@@ -255,7 +343,7 @@ export function Header() {
               {/* Login/User section - Always at top */}
               {user ? (
                 <>
-                  {user.role === 'admin' && (
+                  {(user.role === 'admin' || user.role === 'staff') && (
                     <Link 
                       href="/admin"
                       className="px-4 py-2 text-sm font-medium text-amber-600 hover:text-amber-700 transition-colors bg-amber-50 rounded-lg"
@@ -357,6 +445,41 @@ export function Header() {
               )}
               
               {/* Navigation links */}
+              
+              {/* Driver mode: Manage Bookings Button - Mobile */}
+              {viewMode === 'driver' && user?.is_driver && (
+                <Link 
+                  href="/profile/bookings"
+                  className="relative flex items-center gap-3 px-4 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-all shadow-md"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <ClipboardList size={20} />
+                  <span>Quản lý đặt chỗ</span>
+                  {activeTripsCount > 0 && (
+                    <span className="ml-auto flex items-center justify-center min-w-[24px] h-6 px-2 bg-red-500 text-white text-xs font-bold rounded-full">
+                      {activeTripsCount}
+                    </span>
+                  )}
+                </Link>
+              )}
+
+              {/* Passenger mode: My Bookings Button - Mobile */}
+              {viewMode === 'passenger' && user && (
+                <Link 
+                  href="/profile/my-bookings"
+                  className="relative flex items-center gap-3 px-4 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-all shadow-md"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Calendar size={20} />
+                  <span>Chuyến đã đặt</span>
+                  {bookingsCount > 0 && (
+                    <span className="ml-auto flex items-center justify-center min-w-[24px] h-6 px-2 bg-red-500 text-white text-xs font-bold rounded-full">
+                      {bookingsCount}
+                    </span>
+                  )}
+                </Link>
+              )}
+              
               <AnimatePresence mode="wait">
                 {(viewMode === 'passenger' || !user?.is_driver) && (
                   <motion.div
@@ -393,27 +516,45 @@ export function Header() {
                     </Link>
                   </motion.div>
                 )}
+                
+                {viewMode === 'passenger' && user && (
+                  <motion.div
+                    key="mobile-post-request"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <Link 
+                      href="/dang-nhu-cau" 
+                      className="px-4 py-2 text-sm font-medium hover:text-primary transition-colors hover:bg-muted/50 rounded-lg"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Hành khách đăng
+                    </Link>
+                  </motion.div>
+                )}
+                
+                {!user && (
+                  <motion.div
+                    key="mobile-post-request-guest"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <button
+                      onClick={() => {
+                        setAuthModalOpen(true)
+                        setMobileMenuOpen(false)
+                      }}
+                      className="px-4 py-2 text-sm font-medium hover:text-primary transition-colors hover:bg-muted/50 rounded-lg text-left w-full"
+                    >
+                      Hành khách đăng
+                    </button>
+                  </motion.div>
+                )}
               </AnimatePresence>
-              
-              {user ? (
-                <Link 
-                  href="/dang-nhu-cau" 
-                  className="px-4 py-2 text-sm font-medium hover:text-primary transition-colors hover:bg-muted/50 rounded-lg"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Hành khách đăng
-                </Link>
-              ) : (
-                <button
-                  onClick={() => {
-                    setAuthModalOpen(true)
-                    setMobileMenuOpen(false)
-                  }}
-                  className="px-4 py-2 text-sm font-medium hover:text-primary transition-colors hover:bg-muted/50 rounded-lg text-left w-full"
-                >
-                  Hành khách đăng
-                </button>
-              )}
               
               <Link 
                 href="/tai-xe" 

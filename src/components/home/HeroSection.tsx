@@ -247,7 +247,7 @@ export function HeroSection() {
                     type="date"
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
-                    className="w-full px-4 py-3.5 rounded-xl border-2 border-border bg-background/95 focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all font-medium"
+                    className="w-full px-4 py-3.5 rounded-xl border-2 border-border bg-background/95 focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all font-medium text-left"
                     style={{
                       colorScheme: 'light'
                     }}

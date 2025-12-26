@@ -44,7 +44,6 @@ function TimChuyenPage() {
   const [page, setPage] = useState(0)
   const [priceRange, setPriceRange] = useState([0, 500000])
   const [selectedVehicles, setSelectedVehicles] = useState<string[]>([])
-  const [showMobileFilter, setShowMobileFilter] = useState(false)
   const [searchFrom, setSearchFrom] = useState('')
   const [searchTo, setSearchTo] = useState('')
   const [searchDate, setSearchDate] = useState('')
@@ -127,10 +126,10 @@ function TimChuyenPage() {
         .select('user_id, vehicle_type, vehicle_seats')
         .in('user_id', driverIds)
 
-      // Fetch user info (không lấy phone ở đây, sẽ lấy khi user đăng nhập)
+      // Fetch user info (bao gồm rating và completed_trips)
       const { data: usersData } = await supabase
         .from('users')
-        .select('id, full_name, avatar_url')
+        .select('id, full_name, avatar_url, rating, completed_trips, verified')
         .in('id', driverIds)
 
       // Create lookup maps
@@ -146,17 +145,19 @@ function TimChuyenPage() {
           id: trip.id,
           driverId: trip.driver_id, // Lưu driver_id để fetch phone sau khi login
           driver: {
+            id: trip.driver_id,
             name: user?.full_name || 'Tài xế',
             avatar: user?.avatar_url || '',
             phone: '', // Không trả phone ở đây
-            rating: 4.5,
-            totalTrips: 0,
-            verified: true,
+            rating: user?.rating || 0,
+            totalTrips: user?.completed_trips || 0,
+            verified: user?.verified || false,
           },
           from: trip.from_location || 'N/A',
           to: trip.to_location || 'N/A',
           date: trip.date ? new Date(trip.date).toLocaleDateString('vi-VN') : 'N/A',
-          time: trip.time || '00:00',
+          time: trip.time ? trip.time.substring(0, 5) : '00:00', // Cắt giây (HH:MM:SS -> HH:MM)
+          departureTime: trip.departure_time || new Date(trip.date + ' ' + trip.time).toISOString(),
           seatsAvailable: trip.seats_available || 0,
           totalSeats: trip.total_seats || driver?.vehicle_seats || 4,
           price: trip.price || 0,
@@ -250,7 +251,22 @@ function TimChuyenPage() {
         filtered.sort((a, b) => b.price - a.price)
         break
       case 'rating':
-        filtered.sort((a, b) => b.driver.rating - a.driver.rating)
+        // Ưu tiên tài xế uy tín (≥ 4.5 sao) lên đầu, sau đó sắp xếp theo rating
+        filtered.sort((a, b) => {
+          const aIsReputable = a.driver.rating >= 4.5
+          const bIsReputable = b.driver.rating >= 4.5
+          
+          if (aIsReputable && !bIsReputable) return -1
+          if (!aIsReputable && bIsReputable) return 1
+          
+          // Nếu cùng uy tín hoặc không uy tín, sắp xếp theo rating
+          if (b.driver.rating !== a.driver.rating) {
+            return b.driver.rating - a.driver.rating
+          }
+          
+          // Nếu rating bằng nhau, ưu tiên người có nhiều chuyến hơn
+          return b.driver.totalTrips - a.driver.totalTrips
+        })
         break
       default: // newest
         break
@@ -444,20 +460,6 @@ function TimChuyenPage() {
               </div>
             </Card>
           </aside>
-
-          {/* Mobile Filter Button */}
-          <div className="lg:hidden fixed bottom-4 right-4 z-40">
-            <Button
-              size="lg"
-              className="relative rounded-full shadow-2xl bg-gradient-to-r from-primary to-accent text-white font-semibold btn-glow overflow-hidden hover:scale-110 transition-all"
-              onClick={() => setShowMobileFilter(!showMobileFilter)}
-            >
-              <span className="relative z-10 flex items-center gap-2">
-                <SlidersHorizontal size={20} />
-                Bộ lọc
-              </span>
-            </Button>
-          </div>
 
           {/* Trip List */}
           <div className="flex-1">
