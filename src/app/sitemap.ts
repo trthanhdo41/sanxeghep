@@ -67,5 +67,35 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
       priority: 0.6,
     },
+    {
+      url: `${baseUrl}/bang-gia`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/faq`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.6,
+    },
+    {
+      url: `${baseUrl}/chinh-sach-bao-mat`,
+      lastModified: new Date(),
+      changeFrequency: 'yearly',
+      priority: 0.4,
+    },
+    {
+      url: `${baseUrl}/dieu-khoan-su-dung`,
+      lastModified: new Date(),
+      changeFrequency: 'yearly',
+      priority: 0.4,
+    },
+    {
+      url: `${baseUrl}/quy-dinh-chung`,
+      lastModified: new Date(),
+      changeFrequency: 'yearly',
+      priority: 0.4,
+    },
   ]
 }
