@@ -67,6 +67,14 @@ export function BookingModal({ open, onOpenChange, trip, onSuccess }: BookingMod
         }
       }
 
+      // Delete old rejected/cancelled bookings to avoid unique constraint error
+      await supabase
+        .from('bookings')
+        .delete()
+        .eq('trip_id', trip.id)
+        .eq('passenger_id', user.id)
+        .in('status', ['rejected', 'cancelled'])
+
       const { error } = await supabase
         .from('bookings')
         .insert({

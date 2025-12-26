@@ -8,6 +8,7 @@ import { ChatBot } from "@/components/ChatBot";
 import { AuthProvider } from "@/lib/auth-context";
 import { SessionExpiredHandler } from "@/components/SessionExpiredHandler";
 import { PassengerNotifications } from "@/components/notifications/PassengerNotifications";
+import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 import { Toaster } from "sonner";
 
 const inter = Inter({
@@ -82,7 +83,7 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    google: "your-google-verification-code", // TODO: Add real verification code
+    google: "FytBCkH8aBg0i_CTDWUttcSVCzDLSue9RJZU_uVHy9A", // Google Search Console verification
     // yandex: "your-yandex-verification-code",
     // bing: "your-bing-verification-code",
   },
@@ -143,6 +144,7 @@ export default function RootLayout({
         />
       </head>
       <body className={`${inter.variable} font-sans antialiased`} suppressHydrationWarning>
+        <GoogleAnalytics />
         <AuthProvider>
           <Header />
           <main className="min-h-screen">{children}</main>

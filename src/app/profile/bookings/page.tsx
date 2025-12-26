@@ -99,17 +99,63 @@ export default function BookingsPage() {
 
   const handleConfirm = async (bookingId: string) => {
     try {
-      const { error } = await supabase
+      // Get booking details first
+      const { data: booking, error: fetchError } = await supabase
+        .from('bookings')
+        .select('trip_id, seats_booked, status')
+        .eq('id', bookingId)
+        .single()
+
+      if (fetchError) throw fetchError
+
+      // Check if already confirmed
+      if (booking.status !== 'pending') {
+        toast.error('Booking này đã được xử lý rồi')
+        fetchBookings()
+        return
+      }
+
+      // Get current trip seats
+      const { data: trip, error: tripFetchError } = await supabase
+        .from('trips')
+        .select('seats_available')
+        .eq('id', booking.trip_id)
+        .single()
+
+      if (tripFetchError) throw tripFetchError
+
+      // Check if enough seats available
+      if (trip.seats_available < booking.seats_booked) {
+        toast.error(`Không đủ ghế trống! Chỉ còn ${trip.seats_available} ghế, nhưng booking yêu cầu ${booking.seats_booked} ghế`)
+        return
+      }
+
+      // Update booking status
+      const { error: updateError } = await supabase
         .from('bookings')
         .update({ 
           status: 'confirmed',
           confirmed_at: new Date().toISOString()
         })
         .eq('id', bookingId)
+        .eq('status', 'pending') // Only update if still pending
 
-      if (error) throw error
+      if (updateError) throw updateError
 
-      toast.success('Đã xác nhận đặt chỗ')
+      // Decrease available seats in trip
+      const newSeatsAvailable = trip.seats_available - booking.seats_booked
+      const { error: tripUpdateError } = await supabase
+        .from('trips')
+        .update({ 
+          seats_available: Math.max(0, newSeatsAvailable) // Prevent negative
+        })
+        .eq('id', booking.trip_id)
+
+      if (tripUpdateError) throw tripUpdateError
+
+      toast.success('Đã xác nhận đặt chỗ', {
+        description: `Còn lại ${newSeatsAvailable} ghế trống`
+      })
       fetchBookings()
     } catch (error: any) {
       console.error('Error confirming booking:', error)
